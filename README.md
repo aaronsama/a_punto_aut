@@ -32,7 +32,7 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/aarons
 
 ## Usage
 
-Refer to the [[Algorithm]] section below.
+Refer to the [Algorithm](#algorithm) section below.
 
 ## Algorithm
 
