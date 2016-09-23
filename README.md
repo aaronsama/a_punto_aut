@@ -81,6 +81,7 @@ meaning:
 ```
 
 The process is the following:
+
 1. the script prompts each name of the list followed by each question. To answer, enter a score between 1 and 5.
 2. The score of each name is the sum of the scores for each parameter, each multiplied by the product of the two weights of that parameter (example: using the parameter example above, if the score for `meaning` is 3, then the weighted score is `3 * (1.2 * 0.9) = 3.24`).
 3. The script pitches every name against the others, assigning 3 points to the winner, 0 points to the loser and 1 point in case of draw (like in the Italian soccer championship).
