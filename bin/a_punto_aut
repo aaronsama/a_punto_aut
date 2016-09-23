@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require 'a_punto_aut'
+
+APuntoAut::NameChooser.start(ARGV)
