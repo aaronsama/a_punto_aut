@@ -22,48 +22,60 @@ module APuntoAut
       end
     end
 
-    desc 'play SCORES_FILE GROUP_SIZE', 'find a winner by playing all the names against the others'
-    def play(scores_file, group_size)
-      @scores = YAML.load_file(scores_file)
-      @scores.each { |n, _| @scores[n] = 0 }
-      names = @scores.keys
+    desc 'play NAMES_FILE CRITERIA_FILE', 'find a winner by playing all the names against the others'
+    def play(names, criteria_file)
+      init_names(names)
+      criteria = YAML.load_file(criteria_file)
+      @strength = {}
 
-      say 'GROUPS STAGE', :green
-      group_stage(names, group_size.to_i)
-      print_table @scores.to_a
-      save_scores('group_stage.yml')
+      say 'Answer a few questions about the names you have shortlisted'
 
-      say 'KNOCKOUT STAGE', :green
-      say 'Pending'
+      @names.each do |name|
+        say name.upcase, :magenta
+        @strength[name] = []
+        criteria.each do |_, c|
+          score = ask c['question'], limited_to: %w(1 2 3 4 5)
+          @strength[name] << score.to_f * (c['weight1'] * c['weight2'])
+        end
+
+        @strength[name] = @strength[name].reduce :+
+      end
+
+      say 'Wait a moment...'
+
+      @final_scores = @names.zip(Array.new(@names.count, 0)).to_h
+      @names.combination(2).each do |(name1, name2)|
+        vs(name1, name2)
+      end
+
+      say 'Here are the final scores!', :green
+      @final_scores.sort_by { |_, final_score| final_score }
+                   .reverse
+                   .each do |(name, final_score)|
+        puts "#{name}: #{final_score}"
+      end
     end
 
     private
 
-    def group_stage(names, group_size)
-      say 'Seeding groups...', :yellow
-      names.shuffle.each_slice(group_size).with_index do |group, group_id|
-        say "Group #{group_id + 1}\n======", :magenta
-        group.combination(2).each { |(name1, name2)| vs(name1, name2) }
-
-        @scores["Group #{group_id + 1}"] = @scores.slice(*group)
-        group.each { |n| @scores.delete n }
+    def vs(name1, name2)
+      if @strength[name1] > @strength[name2]
+        win name1
+      elsif @strength[name1] < @strength[name2]
+        win name2
+      else
+        tie(name1, name2)
       end
     end
 
-    def vs(name1, name2)
-      res = ask "#{name1} vs #{name2}", limited_to: [name1, name2]
-      # tie(name1, name2) if res == '='
-      win(res) unless res == '='
-    end
-
     def win(name)
-      @scores[name] += 3
+      @final_scores[name] += 3
     end
 
-    # def tie(name1, name2)
-    #   @scores[name1] += 1
-    #   @scores[name2] += 1
-    # end
+    def tie(name1, name2)
+      @final_scores[name1] += 1
+      @final_scores[name2] += 1
+    end
 
     def ask_name(name)
       display_name = name.strip.capitalize # this is a displayable name
@@ -87,6 +99,7 @@ module APuntoAut
 
     def init_names(file)
       @names = File.readlines(file).map { |n| n.delete ' ' }.uniq
+      @names.map!(&:strip)
     end
 
     def init_scores(file)
@@ -99,7 +112,9 @@ module APuntoAut
     end
 
     def save_scores(file)
-      File.open(file.gsub(/(\.[[:alpha:]]+)$/, '_scores.yml'), 'w') { |f| f.write @scores.to_yaml }
+      File.open(file.gsub(/(\.[[:alpha:]]+)$/, '_scores.yml'), 'w') do |f|
+        f.write @scores.to_yaml
+      end
     end
   end
 end
